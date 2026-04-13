@@ -132,15 +132,14 @@ async function getTrayIcon() {
 
 // ── Overlay window ──────────────────────────────────────────────────────────
 function createOverlay() {
-  const cursorPoint = screen.getCursorScreenPoint();
-  const { bounds } = screen.getDisplayNearestPoint(cursorPoint);
+  const { bounds } = screen.getPrimaryDisplay();
   overlay = new BrowserWindow({
     x: bounds.x, y: bounds.y,
     width: bounds.width, height: bounds.height,
     transparent: true,
     frame: false,
     alwaysOnTop: true,
-    focusable: false,
+    focusable: true,
     skipTaskbar: true,
     resizable: false,
     hasShadow: false,
@@ -281,7 +280,10 @@ function sendMacroLinux(text) {
 }
 
 // ── App lifecycle ───────────────────────────────────────────────────────────
-app.whenReady().then(async () => {
+// On Linux, transparent visuals need time to initialize before creating windows.
+const readyDelay = process.platform === 'linux' ? 500 : 0;
+
+app.whenReady().then(() => setTimeout(async () => {
   tray = new Tray(await getTrayIcon());
   tray.setToolTip('Bad Claude – click for whip');
   tray.setContextMenu(
@@ -303,6 +305,6 @@ app.whenReady().then(async () => {
       toggleOverlay();
     }
   }
-});
+}, readyDelay));
 
 app.on('window-all-closed', e => e.preventDefault()); // keep alive in tray
