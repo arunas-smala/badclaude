@@ -264,8 +264,8 @@ function sendMacroLinux(text) {
   setTimeout(() => {
     const escaped = text.replace(/\\/g, '\\\\').replace(/'/g, "'\\''");
     // Use kitty remote control via socket — sends directly to active terminal window
-    const sock = 'unix:/tmp/kitty-sock';
-    execFile('bash', ['-c', `kitty @ --to ${sock} send-text '\\x03' && sleep 0.03 && kitty @ --to ${sock} send-text '${escaped}\\r'`], err => {
+    // kitty appends PID to socket path, so we glob for it
+    execFile('bash', ['-c', `sock=$(ls /tmp/kitty-sock-* 2>/dev/null | head -1) && kitty @ --to unix:$sock send-text '\\x03' && sleep 0.03 && kitty @ --to unix:$sock send-text '${escaped}\\r'`], err => {
       if (err) console.warn('kitty send-text failed:', err.message);
       setTimeout(() => {
         if (overlay) { overlay.show(); overlay.webContents.send('spawn-whip'); }
