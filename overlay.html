@@ -98,14 +98,14 @@ document.addEventListener('mousedown', e => {
     const now = Date.now();
     if (!dropping && now - lastCrackTime > P.crackCooldownMs) {
       // Quick lateral jolt on the middle third — tip follows naturally via physics
-      const start = Math.floor(whip.length * 0.3);
-      const end = Math.floor(whip.length * 0.7);
+      const start = Math.floor(whip.length * 0.25);
+      const end = Math.floor(whip.length * 0.75);
       const side = (Math.random() > 0.5 ? 1 : -1);
       for (let i = start; i < end; i++) {
         const t = (i - start) / (end - start);
-        const force = 60 * Math.sin(t * Math.PI); // peak in the middle
+        const force = 140 * Math.sin(t * Math.PI);
         whip[i].px -= side * force;
-        whip[i].py -= 30 * Math.sin(t * Math.PI);
+        whip[i].py -= 60 * Math.sin(t * Math.PI);
       }
       lastCrackTime = now;
       playCrackSound();
