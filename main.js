@@ -293,10 +293,12 @@ app.whenReady().then(async () => {
   );
   tray.on('click', toggleOverlay);
 
-  // On Linux, also listen for SIGUSR1 so a keybind can trigger the whip
+  // On Linux, write PID file and listen for SIGUSR1 to toggle whip
   if (process.platform === 'linux') {
+    const pidFile = path.join(os.tmpdir(), 'badclaude.pid');
+    fs.writeFileSync(pidFile, String(process.pid));
     process.on('SIGUSR1', () => toggleOverlay());
-    // Auto-show overlay if --show flag is passed
+    app.on('before-quit', () => { try { fs.unlinkSync(pidFile); } catch {} });
     if (process.argv.includes('--show')) {
       toggleOverlay();
     }
