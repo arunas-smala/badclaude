@@ -101,11 +101,13 @@ document.addEventListener('mousedown', e => {
       const start = Math.floor(whip.length * 0.25);
       const end = Math.floor(whip.length * 0.75);
       const side = (Math.random() > 0.5 ? 1 : -1);
+      const lateralForce = 100 + Math.random() * 120; // 100–220
+      const verticalForce = 40 + Math.random() * 60;  // 40–100
       for (let i = start; i < end; i++) {
         const t = (i - start) / (end - start);
-        const force = 140 * Math.sin(t * Math.PI);
-        whip[i].px -= side * force;
-        whip[i].py -= 60 * Math.sin(t * Math.PI);
+        const wave = Math.sin(t * Math.PI);
+        whip[i].px -= side * lateralForce * wave;
+        whip[i].py -= verticalForce * wave;
       }
       lastCrackTime = now;
       playCrackSound();
