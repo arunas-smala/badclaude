@@ -257,21 +257,13 @@ function sendMacroMac(text) {
   });
 }
 
-// ── Linux/Wayland macro via wtype ───────────────────────────────────────────
+// ── Linux/Wayland macro via kitty remote control ────────────────────────────
 function sendMacroLinux(text) {
-  // Temporarily hide overlay to send keystrokes, then show it again
-  if (overlay) overlay.hide();
-  setTimeout(() => {
-    const escaped = text.replace(/\\/g, '\\\\').replace(/'/g, "'\\''");
-    // Use kitty remote control via socket — sends directly to active terminal window
-    // kitty appends PID to socket path, so we glob for it
-    execFile('bash', ['-c', `sock=$(ls /tmp/kitty-sock-* 2>/dev/null | head -1) && kitty @ --to unix:$sock send-text '\\x03' && sleep 0.03 && kitty @ --to unix:$sock send-text '${escaped}\\r'`], err => {
-      if (err) console.warn('kitty send-text failed:', err.message);
-      setTimeout(() => {
-        if (overlay) { overlay.show(); overlay.webContents.send('spawn-whip'); }
-      }, 100);
-    });
-  }, 100);
+  // kitty socket doesn't need focus — send directly without hiding overlay
+  const escaped = text.replace(/\\/g, '\\\\').replace(/'/g, "'\\''");
+  execFile('bash', ['-c', `sock=$(ls /tmp/kitty-sock-* 2>/dev/null | head -1) && kitty @ --to unix:$sock send-text '\\x03${escaped}\\r'`], err => {
+    if (err) console.warn('kitty send-text failed:', err.message);
+  });
 }
 
 // ── App lifecycle ───────────────────────────────────────────────────────────
