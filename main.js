@@ -262,15 +262,14 @@ function sendMacroLinux(text) {
   // Temporarily hide overlay to send keystrokes, then show it again
   if (overlay) overlay.hide();
   setTimeout(() => {
-    execFile('wtype', ['-M', 'ctrl', '-P', 'c', '-p', 'c', '-m', 'ctrl'], err => {
-      if (err) { console.warn('wtype Ctrl+C failed:', err.message); return; }
+    const escaped = text.replace(/\\/g, '\\\\').replace(/'/g, "'\\''");
+    // Use kitty remote control via socket — sends directly to active terminal window
+    const sock = 'unix:/tmp/kitty-sock';
+    execFile('bash', ['-c', `kitty @ --to ${sock} send-text '\\x03' && sleep 0.03 && kitty @ --to ${sock} send-text '${escaped}\\r'`], err => {
+      if (err) console.warn('kitty send-text failed:', err.message);
       setTimeout(() => {
-        execFile('wtype', [text + '\n'], err2 => {
-          if (err2) console.warn('wtype text failed:', err2.message);
-          // Bring overlay back
-          if (overlay) { overlay.show(); overlay.webContents.send('spawn-whip'); }
-        });
-      }, 30);
+        if (overlay) { overlay.show(); overlay.webContents.send('spawn-whip'); }
+      }, 100);
     });
   }, 100);
 }
