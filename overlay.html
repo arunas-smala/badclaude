@@ -94,9 +94,18 @@ document.addEventListener('mousedown', e => {
     // Right click — drop whip
     if (!dropping) dropping = true;
   } else if (e.button === 0) {
-    // Left click — manual crack
+    // Left click — snap whip with animated strike
     const now = Date.now();
-    if (!dropping && now - whipSpawnTime >= P.firstCrackGraceMs && now - lastCrackTime > P.crackCooldownMs) {
+    if (!dropping && now - lastCrackTime > P.crackCooldownMs) {
+      // Fling the tip downward hard to create a visual snap
+      const kickStrength = 80;
+      const kickSegments = Math.floor(P.segments * 0.6);
+      for (let i = P.segments - 1; i >= P.segments - kickSegments; i--) {
+        const t = (P.segments - 1 - i) / kickSegments;
+        const strength = kickStrength * (1 - t * t);
+        whip[i].py -= strength; // kick downward by setting previous Y up
+        whip[i].px += (Math.random() - 0.5) * strength * 0.5;
+      }
       lastCrackTime = now;
       playCrackSound();
       window.bridge.whipCrack();
