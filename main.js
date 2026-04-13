@@ -3,6 +3,16 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { execFile } = require('child_process');
+const { promisify } = require('util');
+
+const execFileAsync = promisify(execFile);
+
+// ── Linux/Wayland setup ─────────────────────────────────────────────────────
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('enable-features', 'UseOzonePlatform');
+  app.commandLine.appendSwitch('ozone-platform', 'wayland');
+  app.commandLine.appendSwitch('enable-transparent-visuals');
+}
 
 // ── Win32 FFI (Windows only) ────────────────────────────────────────────────
 let keybd_event, VkKeyScanA;
@@ -29,7 +39,7 @@ const VK_MENU    = 0x12; // Alt
 const VK_TAB     = 0x09;
 const KEYUP      = 0x0002;
 
-/** One Alt+Tab / Cmd+Tab so focus returns to the previously active app after tray click. */
+/** Refocus the previously active app after tray click. */
 function refocusPreviousApp() {
   const delayMs = 80;
   const run = () => {
@@ -50,6 +60,12 @@ function refocusPreviousApp() {
       execFile('osascript', ['-e', script], err => {
         if (err) {
           console.warn('refocus previous app (Cmd+Tab) failed:', err.message);
+        }
+      });
+    } else if (process.platform === 'linux') {
+      execFile('hyprctl', ['dispatch', 'focuscurrentorlast'], err => {
+        if (err) {
+          console.warn('hyprctl refocus failed:', err.message);
         }
       });
     }
@@ -116,7 +132,8 @@ async function getTrayIcon() {
 
 // ── Overlay window ──────────────────────────────────────────────────────────
 function createOverlay() {
-  const { bounds } = screen.getPrimaryDisplay();
+  const cursorPoint = screen.getCursorScreenPoint();
+  const { bounds } = screen.getDisplayNearestPoint(cursorPoint);
   overlay = new BrowserWindow({
     x: bounds.x, y: bounds.y,
     width: bounds.width, height: bounds.height,
@@ -192,6 +209,8 @@ function sendMacro() {
     sendMacroWindows(chosen);
   } else if (process.platform === 'darwin') {
     sendMacroMac(chosen);
+  } else if (process.platform === 'linux') {
+    sendMacroLinux(chosen);
   }
 }
 
@@ -239,16 +258,49 @@ function sendMacroMac(text) {
   });
 }
 
+// ── Linux/Wayland macro via wtype ───────────────────────────────────────────
+function sendMacroLinux(text) {
+  // Ctrl+C to interrupt, then type the phrase, then Enter
+  execFile('wtype', ['-M', 'ctrl', '-P', 'c', '-p', 'c', '-m', 'ctrl'], err => {
+    if (err) {
+      console.warn('wtype Ctrl+C failed:', err.message);
+      return;
+    }
+    setTimeout(() => {
+      execFile('wtype', [text], err2 => {
+        if (err2) {
+          console.warn('wtype text failed:', err2.message);
+          return;
+        }
+        execFile('wtype', ['-P', 'Return', '-p', 'Return'], err3 => {
+          if (err3) console.warn('wtype Enter failed:', err3.message);
+        });
+      });
+    }, 30);
+  });
+}
+
 // ── App lifecycle ───────────────────────────────────────────────────────────
 app.whenReady().then(async () => {
   tray = new Tray(await getTrayIcon());
   tray.setToolTip('Bad Claude – click for whip');
   tray.setContextMenu(
     Menu.buildFromTemplate([
+      { label: 'Whip', click: () => toggleOverlay() },
+      { type: 'separator' },
       { label: 'Quit', click: () => app.quit() },
     ])
   );
   tray.on('click', toggleOverlay);
+
+  // On Linux, also listen for SIGUSR1 so a keybind can trigger the whip
+  if (process.platform === 'linux') {
+    process.on('SIGUSR1', () => toggleOverlay());
+    // Auto-show overlay if --show flag is passed
+    if (process.argv.includes('--show')) {
+      toggleOverlay();
+    }
+  }
 });
 
 app.on('window-all-closed', e => e.preventDefault()); // keep alive in tray

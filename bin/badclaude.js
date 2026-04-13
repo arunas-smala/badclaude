@@ -11,9 +11,16 @@ try {
 }
 
 const appPath = path.resolve(__dirname, '..');
+const extraArgs = [];
+const env = { ...process.env };
 
-const child = spawn(electronBinary, [appPath], {
+if (process.platform === 'linux' && env.WAYLAND_DISPLAY) {
+  extraArgs.push('--enable-features=UseOzonePlatform', '--ozone-platform=wayland');
+}
+
+const child = spawn(electronBinary, [appPath, ...extraArgs], {
   detached: true,
+  env,
   stdio: 'ignore',
   windowsHide: true,
 });

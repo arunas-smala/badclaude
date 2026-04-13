@@ -9,6 +9,7 @@
   },
   "os": [
     "darwin",
+    "linux",
     "win32"
   ],
   "engines": {
