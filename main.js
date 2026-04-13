@@ -259,23 +259,19 @@ function sendMacroMac(text) {
 
 // ── Linux/Wayland macro via wtype ───────────────────────────────────────────
 function sendMacroLinux(text) {
-  // Ctrl+C to interrupt, then type the phrase, then Enter
-  execFile('wtype', ['-M', 'ctrl', '-P', 'c', '-p', 'c', '-m', 'ctrl'], err => {
-    if (err) {
-      console.warn('wtype Ctrl+C failed:', err.message);
-      return;
-    }
+  // Refocus previous window first, then send keystrokes
+  execFile('hyprctl', ['dispatch', 'focuscurrentorlast'], err => {
+    if (err) console.warn('hyprctl refocus failed:', err.message);
     setTimeout(() => {
-      execFile('wtype', [text], err2 => {
-        if (err2) {
-          console.warn('wtype text failed:', err2.message);
-          return;
-        }
-        execFile('wtype', ['-P', 'Return', '-p', 'Return'], err3 => {
-          if (err3) console.warn('wtype Enter failed:', err3.message);
-        });
+      execFile('wtype', ['-M', 'ctrl', '-P', 'c', '-p', 'c', '-m', 'ctrl'], err2 => {
+        if (err2) { console.warn('wtype Ctrl+C failed:', err2.message); return; }
+        setTimeout(() => {
+          execFile('wtype', [text + '\n'], err3 => {
+            if (err3) console.warn('wtype text failed:', err3.message);
+          });
+        }, 30);
       });
-    }, 30);
+    }, 50);
   });
 }
 
