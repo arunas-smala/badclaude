@@ -88,9 +88,22 @@ let handleAngVel = 0;
 const WHIP_CRACK_SOUNDS = ['sounds/A.mp3', 'sounds/B.mp3', 'sounds/C.mp3', 'sounds/D.mp3', 'sounds/E.mp3'];
 
 document.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
-document.addEventListener('mousedown', () => {
-  if (whip && !dropping) dropping = true;
+document.addEventListener('mousedown', e => {
+  if (!whip) return;
+  if (e.button === 2) {
+    // Right click — drop whip
+    if (!dropping) dropping = true;
+  } else if (e.button === 0) {
+    // Left click — manual crack
+    const now = Date.now();
+    if (!dropping && now - whipSpawnTime >= P.firstCrackGraceMs && now - lastCrackTime > P.crackCooldownMs) {
+      lastCrackTime = now;
+      playCrackSound();
+      window.bridge.whipCrack();
+    }
+  }
 });
+document.addEventListener('contextmenu', e => e.preventDefault());
 
 // ── Whip creation ───────────────────────────────────────────────────────────
 function spawnWhip(mx, my) {
