@@ -94,22 +94,18 @@ document.addEventListener('mousedown', e => {
     // Right click — drop whip
     if (!dropping) dropping = true;
   } else if (e.button === 0) {
-    // Left click — snap whip: yank handle forward then snap back
+    // Left click — snap: mid-segments jolt sideways, tip whips around
     const now = Date.now();
     if (!dropping && now - lastCrackTime > P.crackCooldownMs) {
-      // Calculate strike direction from handle toward tip
-      const tip = whip[whip.length - 1];
-      const handle = whip[0];
-      let dx = tip.x - handle.x;
-      let dy = tip.y - handle.y;
-      const dist = Math.hypot(dx, dy) || 1;
-      dx /= dist; dy /= dist;
-      // Slam all segments forward along whip direction, stronger toward tip
-      for (let i = 1; i < whip.length; i++) {
-        const t = i / (whip.length - 1);
-        const force = 200 * t * t; // quadratic — tip gets most force
-        whip[i].px -= dx * force;
-        whip[i].py -= dy * force;
+      // Quick lateral jolt on the middle third — tip follows naturally via physics
+      const start = Math.floor(whip.length * 0.3);
+      const end = Math.floor(whip.length * 0.7);
+      const side = (Math.random() > 0.5 ? 1 : -1);
+      for (let i = start; i < end; i++) {
+        const t = (i - start) / (end - start);
+        const force = 60 * Math.sin(t * Math.PI); // peak in the middle
+        whip[i].px -= side * force;
+        whip[i].py -= 30 * Math.sin(t * Math.PI);
       }
       lastCrackTime = now;
       playCrackSound();
