@@ -259,20 +259,18 @@ function sendMacroMac(text) {
 
 // ── Linux/Wayland macro via wtype ───────────────────────────────────────────
 function sendMacroLinux(text) {
-  // Refocus previous window first, then send keystrokes
-  execFile('hyprctl', ['dispatch', 'focuscurrentorlast'], err => {
-    if (err) console.warn('hyprctl refocus failed:', err.message);
-    setTimeout(() => {
-      execFile('wtype', ['-M', 'ctrl', '-P', 'c', '-p', 'c', '-m', 'ctrl'], err2 => {
-        if (err2) { console.warn('wtype Ctrl+C failed:', err2.message); return; }
-        setTimeout(() => {
-          execFile('wtype', [text + '\n'], err3 => {
-            if (err3) console.warn('wtype text failed:', err3.message);
-          });
-        }, 30);
-      });
-    }, 50);
-  });
+  // Hide overlay to give focus back, then type into the now-focused window
+  if (overlay) overlay.hide();
+  setTimeout(() => {
+    execFile('wtype', ['-M', 'ctrl', '-P', 'c', '-p', 'c', '-m', 'ctrl'], err => {
+      if (err) { console.warn('wtype Ctrl+C failed:', err.message); return; }
+      setTimeout(() => {
+        execFile('wtype', [text + '\n'], err2 => {
+          if (err2) console.warn('wtype text failed:', err2.message);
+        });
+      }, 30);
+    });
+  }, 100);
 }
 
 // ── App lifecycle ───────────────────────────────────────────────────────────
