@@ -94,17 +94,22 @@ document.addEventListener('mousedown', e => {
     // Right click — drop whip
     if (!dropping) dropping = true;
   } else if (e.button === 0) {
-    // Left click — snap whip with animated strike
+    // Left click — snap whip: yank handle forward then snap back
     const now = Date.now();
     if (!dropping && now - lastCrackTime > P.crackCooldownMs) {
-      // Fling the tip downward hard to create a visual snap
-      const kickStrength = 80;
-      const kickSegments = Math.floor(P.segments * 0.6);
-      for (let i = P.segments - 1; i >= P.segments - kickSegments; i--) {
-        const t = (P.segments - 1 - i) / kickSegments;
-        const strength = kickStrength * (1 - t * t);
-        whip[i].py -= strength; // kick downward by setting previous Y up
-        whip[i].px += (Math.random() - 0.5) * strength * 0.5;
+      // Calculate strike direction from handle toward tip
+      const tip = whip[whip.length - 1];
+      const handle = whip[0];
+      let dx = tip.x - handle.x;
+      let dy = tip.y - handle.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      dx /= dist; dy /= dist;
+      // Slam all segments forward along whip direction, stronger toward tip
+      for (let i = 1; i < whip.length; i++) {
+        const t = i / (whip.length - 1);
+        const force = 200 * t * t; // quadratic — tip gets most force
+        whip[i].px -= dx * force;
+        whip[i].py -= dy * force;
       }
       lastCrackTime = now;
       playCrackSound();
