@@ -259,7 +259,7 @@ function sendMacroMac(text) {
 
 // ── Linux/Wayland macro via wtype ───────────────────────────────────────────
 function sendMacroLinux(text) {
-  // Hide overlay to give focus back, then type into the now-focused window
+  // Temporarily hide overlay to send keystrokes, then show it again
   if (overlay) overlay.hide();
   setTimeout(() => {
     execFile('wtype', ['-M', 'ctrl', '-P', 'c', '-p', 'c', '-m', 'ctrl'], err => {
@@ -267,6 +267,8 @@ function sendMacroLinux(text) {
       setTimeout(() => {
         execFile('wtype', [text + '\n'], err2 => {
           if (err2) console.warn('wtype text failed:', err2.message);
+          // Bring overlay back
+          if (overlay) { overlay.show(); overlay.webContents.send('spawn-whip'); }
         });
       }, 30);
     });
